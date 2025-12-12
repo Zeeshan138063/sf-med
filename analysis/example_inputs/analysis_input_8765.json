@@ -1,0 +1,8 @@
+{
+    "sleep_base_id": 8765,
+    "audio_file_s3_uri": "s3://diametos-audio-data-test-server/user_514/8765/2022-12-21 01:42:54 2022-12-21 06:00:56.flac",
+    "start_timestamp": "2022-12-21 01:42:54",
+    "end_timestamp": "2022-12-21 06:00:56",
+    "updated_start_timestamp": "2022-12-21 01:42:54",
+    "updated_end_timestamp": "2022-12-21 06:00:56"
+}

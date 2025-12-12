@@ -1,0 +1,51 @@
+[project]
+name = "snorefox-med"
+version = "1.1.8"
+authors = [
+    { name = "Abeer Rasheed", email = "ar@diametos.com" },
+    { name = "Sören Hübner", email = "sh@diametos.com" },
+]
+description = "Backend implementation for the Snorefox Med product of Diametos GmbH."
+readme = "README.md"
+python-requires = ">=3.11"
+
+[tool.black]
+line-length = 120
+
+[tool.mypy]
+strict = true
+follow_imports = "silent"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+ignore = ["TD003", "FIX002"]
+fixable = ["I", "COM"]
+select = ["ALL"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.ruff.pylint]
+max-args = 8
+
+[tool.logging.formatters.simple]
+format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+datefmt = "%d.%m.%Y %H:%M:%S"
+
+[tool.logging.handlers.console]
+class = "logging.StreamHandler"
+formatter = "simple"
+
+[tool.logging.root]
+handlers = ["console"]
+
+[tool.logging.loggers.numba]
+handlers = ["console"]
+level = "WARNING"
+propagate = false
+
+[tool.logging.loggers.botocore]
+handlers = ["console"]
+level = "INFO"
+propagate = false

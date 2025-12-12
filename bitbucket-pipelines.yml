@@ -1,0 +1,998 @@
+image: public.ecr.aws/d8i8o7p9/snorefox/snorefox-med
+
+definitions:
+  yaml-anchors:
+    - &set-pipeline-level-variables |
+      export ALIAS_NAME=stable
+      echo "Bitbucket Branch: $BITBUCKET_BRANCH"
+      echo "Bitbucket PR Destination Branch: $BITBUCKET_PR_DESTINATION_BRANCH"
+
+      if [ -n "$BITBUCKET_PR_DESTINATION_BRANCH" ]; then
+        if [ "$BITBUCKET_PR_DESTINATION_BRANCH" == "test" ]; then
+          echo "Setting AWS Snorefox TEST Credentials. PR Pipeline"
+          export AWS_ACCOUNT_ID=533267388922
+          export AWS_DEFAULT_REGION=eu-central-1
+        elif [ "$BITBUCKET_PR_DESTINATION_BRANCH" = "live" ]; then
+          echo "Setting AWS Snorefox PROD Credentials. PR Pipeline"
+          export AWS_ACCOUNT_ID=339712758677
+          export AWS_DEFAULT_REGION=eu-central-1
+        fi
+      else
+        if [ "$BITBUCKET_BRANCH" == "test" ]; then
+          echo "Setting AWS Snorefox TEST Credentials."
+          export AWS_ACCOUNT_ID=533267388922
+          export AWS_DEFAULT_REGION=eu-central-1
+        elif [ $BITBUCKET_BRANCH == 'live' ]; then
+          echo "Setting AWS Snorefox PROD Credentials."
+          export AWS_ACCOUNT_ID=339712758677
+          export AWS_DEFAULT_REGION=eu-central-1
+        fi
+      fi
+
+      if [ -n "$AWS_ACCOUNT_ID" ]; then
+        export ROLE_ARN="arn:aws:iam::$AWS_ACCOUNT_ID:role/bitbucket-cicd"
+      fi
+
+    - &set-aws-credentials |
+      aws sts assume-role-with-web-identity --role-arn $ROLE_ARN --role-session-name snorefox-med-bitbucket-pipeline --web-identity-token $BITBUCKET_STEP_OIDC_TOKEN --duration-seconds 3600 > /tmp/aws-creds.json
+
+      export AWS_ACCESS_KEY_ID=$(jq -r '.Credentials.AccessKeyId' /tmp/aws-creds.json)
+      export AWS_SECRET_ACCESS_KEY=$(jq -r '.Credentials.SecretAccessKey' /tmp/aws-creds.json)
+      export AWS_SESSION_TOKEN=$(jq -r '.Credentials.SessionToken' /tmp/aws-creds.json)
+
+    - &set-preparation-variables |
+      export COMPONENT_NAME=preparation
+      export VERSION_FILE_PATH=snorefox_med/preparation/preparation.version
+      export DOCKER_FILE_PATH=snorefox_med/preparation/preparation.Dockerfile
+
+    - &set-analysis-variables |
+      export COMPONENT_NAME=analysis
+      export VERSION_FILE_PATH=snorefox_med/analysis/analysis.version
+      export DOCKER_FILE_PATH=snorefox_med/analysis/analysis.Dockerfile
+
+    - &set-report-variables |
+      export COMPONENT_NAME=report
+      export VERSION_FILE_PATH=snorefox_med/report/report.version
+      export DOCKER_FILE_PATH=snorefox_med/report/report.Dockerfile
+
+    - &set-source-separation-batch-creation-variables |
+      export COMPONENT_NAME=source-separation-batch-creation
+      export VERSION_FILE_PATH=snorefox_med/source_separation/batch_creation/batch_creation.version
+      export DOCKER_FILE_PATH=snorefox_med/source_separation/batch_creation/batch_creation.Dockerfile
+
+    - &set-source-separation-batch-inference-variables |
+      export COMPONENT_NAME=source-separation-batch-inference
+      export VERSION_FILE_PATH=snorefox_med/source_separation/batch_inference/batch_inference.version
+      export DOCKER_FILE_PATH=snorefox_med/source_separation/batch_inference/batch_inference.Dockerfile
+
+    - &set-source-separation-batch-combination-variables |
+      export COMPONENT_NAME=source-separation-batch-combination
+      export VERSION_FILE_PATH=snorefox_med/source_separation/batch_combination/batch_combination.version
+      export DOCKER_FILE_PATH=snorefox_med/source_separation/batch_combination/batch_combination.Dockerfile
+
+    - &set-sleep-base-tips-variables |
+      export COMPONENT_NAME=sleep-base-tips
+      export VERSION_FILE_PATH=snorefox_med/tips/sleep_base_tips/sleep_base_tips.version
+      export DOCKER_FILE_PATH=snorefox_med/tips/sleep_base_tips/sleep_base_tips.Dockerfile
+
+    - &set-crash-mitigation-variables |
+      export COMPONENT_NAME=crash-mitigation
+      export VERSION_FILE_PATH=snorefox_med/crash_mitigation/crash_mitigation.version
+      export DOCKER_FILE_PATH=snorefox_med/crash_mitigation/crash_mitigation.Dockerfile
+
+    - &set-delete-user-data-variables |
+      export COMPONENT_NAME=delete-user-data
+      export VERSION_FILE_PATH=snorefox_med/delete_user_data/delete_user_data.version
+      export DOCKER_FILE_PATH=snorefox_med/delete_user_data/delete_user_data.Dockerfile
+
+    - &set-promotion-campaign-variables |
+      export COMPONENT_NAME=promotion-campaign
+      export VERSION_FILE_PATH=snorefox_med/promotion_campaign/promotion_campaign.version
+      export DOCKER_FILE_PATH=snorefox_med/promotion_campaign/promotion_campaign.Dockerfile
+
+    - &set-reminder-variables |
+      export COMPONENT_NAME=reminder
+      export VERSION_FILE_PATH=snorefox_med/reminder/reminder.version
+      export DOCKER_FILE_PATH=snorefox_med/reminder/reminder.Dockerfile
+
+    - &set-data-donation-variables |
+      export COMPONENT_NAME=data-donation
+      export VERSION_FILE_PATH=snorefox_med/data_donation/data_donation.version
+      export DOCKER_FILE_PATH=snorefox_med/data_donation/data_donation.Dockerfile
+
+    - &set-daily-tips-variables |
+      export COMPONENT_NAME=daily-tips
+      export VERSION_FILE_PATH=snorefox_med/tips/daily_tips/daily_tips.version
+      export DOCKER_FILE_PATH=snorefox_med/tips/daily_tips/daily_tips.Dockerfile
+
+    - &set-default-tips-variables |
+      export COMPONENT_NAME=default-tips
+      export VERSION_FILE_PATH=snorefox_med/tips/default_tips/default_tips.version
+      export DOCKER_FILE_PATH=snorefox_med/tips/default_tips/default_tips.Dockerfile
+
+    - &set-api-sqs-bridge-variables |
+      export COMPONENT_NAME=api-sqs-bridge
+      export VERSION_FILE_PATH=snorefox_med/api_sqs_bridge/api_sqs_bridge.version
+      export DOCKER_FILE_PATH=snorefox_med/api_sqs_bridge/api_sqs_bridge.Dockerfile
+
+    - &set-convema-invoices-variables |
+      export COMPONENT_NAME=convema-invoices
+      export VERSION_FILE_PATH=snorefox_med/convema_invoices/convema.version
+      export DOCKER_FILE_PATH=snorefox_med/convema_invoices/convema.Dockerfile
+
+    - &set-snorefox-sm-variables |
+      export STATE_MACHINE_ARN=arn:aws:states:$AWS_DEFAULT_REGION:$AWS_ACCOUNT_ID:stateMachine:Snorefox-Workflow
+      export SM_DEFINITION_TEMPLATE_FILE_PATH=snorefox_med/sm_definitions/snorefox_workflow_template.json
+      export SM_DEFINITION_FILE_PATH=snorefox_med/sm_definitions/snorefox_workflow.json
+      export SM_PARAMETERS=""
+      SM_PARAMETERS+=" -e 's|\${REGION}|$AWS_DEFAULT_REGION|g'"
+      SM_PARAMETERS+=" -e 's|\${ACCOUNT_ID}|$AWS_ACCOUNT_ID|g'"
+
+    - &check-version-exists |
+      export VERSION=$(awk -F= '/IMAGE_BUILD_NUMBER/{ print $2 }' $VERSION_FILE_PATH)
+      echo $VERSION
+      export ECR_REPO_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$COMPONENT_NAME
+
+      TAG_EXISTS=$(aws ecr describe-images --repository-name $COMPONENT_NAME | jq -r --arg TAG "$VERSION" '.imageDetails[].imageTags[] | select(. == $TAG)')
+
+      if [ "$TAG_EXISTS" == "$VERSION" ]; then
+        echo Error: Image tag $VERSION already exists in the repository $ECR_REPO_URI.
+        exit 1
+      else
+        echo Image tag $VERSION does not exist. Continuing...
+      fi
+
+    - &build-image |
+      export IMAGE_TAG=$ECR_REPO_URI:$VERSION
+      echo "Deploying $COMPONENT_NAME v"$VERSION
+      docker build -t $IMAGE_TAG -f $DOCKER_FILE_PATH .
+      aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      docker push $IMAGE_TAG
+      echo $IMAGE_TAG
+
+    - &deployment-process-lambda |
+      export FUNCTION_NAME=$COMPONENT_NAME
+      echo $IMAGE_TAG
+      if aws lambda get-function --region "$AWS_DEFAULT_REGION" --function-name "$FUNCTION_NAME" 1>/dev/null ; then
+        aws lambda update-function-code --region "$AWS_DEFAULT_REGION" --function-name "$FUNCTION_NAME" --image-uri "$IMAGE_TAG" 1>/dev/null
+        aws lambda wait function-updated --region "$AWS_DEFAULT_REGION" --function-name "$FUNCTION_NAME" 1>/dev/null
+
+        if [ $? -eq 0 ]; then
+
+          NEW_VERSION=$(aws lambda publish-version --region "$AWS_DEFAULT_REGION" --function-name "$FUNCTION_NAME" --query 'Version' --output text)
+
+          aws lambda update-alias --region "$AWS_DEFAULT_REGION" \
+            --function-name "$FUNCTION_NAME" \
+            --name "$ALIAS_NAME" \
+            --function-version "$NEW_VERSION"
+
+          echo "Lambda function $FUNCTION_NAME Updated!"
+          echo "Published new Lambda version: $NEW_VERSION"
+          echo "Alias $ALIAS_NAME now points to version $NEW_VERSION"
+        else
+          echo "Lambda function $FUNCTION_NAME Update Failed!"
+        fi
+      else
+        echo "Lambda function $FUNCTION_NAME does not exist. Update skipped."
+        exit 1
+      fi
+
+    - &deployment-process-eventbridge-schedule |
+      echo "Getting current task definition for update"
+      export CURRENT_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition "$COMPONENT_NAME" --region "$AWS_DEFAULT_REGION")
+
+      echo "Making task definition compatible for registeration"
+      export TASK_DEFINTIION_TO_REGISTER=$(echo $CURRENT_TASK_DEFINITION | jq --arg IMAGE "$IMAGE_TAG" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+
+      echo "Registering new Task Defintion"
+      NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --region "$AWS_DEFAULT_REGION" --cli-input-json "$TASK_DEFINTIION_TO_REGISTER" --query "taskDefinition.taskDefinitionArn" --output text)
+
+      echo $NEW_TASK_DEF_ARN
+
+      echo "Fetching existing EventBridge schedule"
+      CURRENT_SCHEDULE=$(aws scheduler get-schedule --region "$AWS_DEFAULT_REGION" --group-name $COMPONENT_NAME --name "$COMPONENT_NAME-cron-job-schedule")
+
+      # Extract the existing target JSON, replace the TaskDefinitionArn only
+      SCHEDULE_EXPRESSION=$(echo "$CURRENT_SCHEDULE" | jq -r '.ScheduleExpression')
+      SCHEDULE_EXPRESSION_TIMEZONE=$(echo "$CURRENT_SCHEDULE" | jq -r '.ScheduleExpressionTimezone // empty')
+      FLEXIBLE_TIME_WINDOW=$(echo "$CURRENT_SCHEDULE" | jq -r '.FlexibleTimeWindow.Mode')
+      CURRENT_STATE=$(echo "$CURRENT_SCHEDULE" | jq -r '.State')
+      TARGET=$(echo "$CURRENT_SCHEDULE" | jq --arg NEW_TD "$NEW_TASK_DEF_ARN" '.Target | .EcsParameters.TaskDefinitionArn = $NEW_TD')
+
+      echo "Updating EventBridge schedule with new task definition"
+      aws scheduler update-schedule --region "$AWS_DEFAULT_REGION" --group-name $COMPONENT_NAME --name "$COMPONENT_NAME-cron-job-schedule" --schedule-expression-timezone "$SCHEDULE_EXPRESSION_TIMEZONE" --schedule-expression "$SCHEDULE_EXPRESSION" --flexible-time-window "Mode=$FLEXIBLE_TIME_WINDOW" --state "$CURRENT_STATE" --target "$TARGET"
+
+    - &deployment-process-ecs |
+      export ECS_CLUSTER="snorefox"
+
+      echo "Getting current task definition for update"
+      export CURRENT_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition "$COMPONENT_NAME" --region "$AWS_DEFAULT_REGION")
+
+      echo "Making task definition compatible for registeration"
+      export TASK_DEFINTIION_TO_REGISTER=$(echo $CURRENT_TASK_DEFINITION | jq --arg IMAGE "$IMAGE_TAG" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+      aws ecs register-task-definition --region "$AWS_DEFAULT_REGION" --cli-input-json "$TASK_DEFINTIION_TO_REGISTER" > /dev/null
+
+      echo "Updating ECS Cluster"
+      export NEW_TASK_DEFINTIION=$(aws ecs describe-task-definition --task-definition "$COMPONENT_NAME" --region "$AWS_DEFAULT_REGION")
+      export NEW_REVISION=$(echo $NEW_TASK_DEFINTIION | jq '.taskDefinition.revision')
+      aws ecs update-service --cluster ${ECS_CLUSTER} \
+                              --service ${COMPONENT_NAME} \
+                              --task-definition ${COMPONENT_NAME}:${NEW_REVISION} > /dev/null
+      echo "Update Complete!"
+
+    - &update-sm-process |
+      LAMBDA_FUNCTIONS=("preparation" "data-donation" "analysis" "report" "sleep-base-tips")
+
+      for FUNC in "${LAMBDA_FUNCTIONS[@]}"; do
+        VERSION=$(aws lambda list-versions-by-function \
+          --function-name "$FUNC" \
+          --query 'Versions[?Version!=`$LATEST`]|[-1].Version' \
+          --output text);
+        if [ $? -eq 0 ]; then
+          echo "${FUNC//-/_}_version=$VERSION" >> lambda_versions.env
+        else
+          echo "Failed to fetch latest version for $FUNC";
+          exit 1;
+        fi
+      done
+
+      cat lambda_versions.env
+      source lambda_versions.env
+
+      SM_PARAMETERS+=" -e 's|\${preparation_version}|$preparation_version|g'"
+      SM_PARAMETERS+=" -e 's|\${analysis_version}|$analysis_version|g'"
+      SM_PARAMETERS+=" -e 's|\${report_version}|$report_version|g'"
+      SM_PARAMETERS+=" -e 's|\${data_donation_version}|$data_donation_version|g'"
+      SM_PARAMETERS+=" -e 's|\${sleep_base_tips_version}|$sleep_base_tips_version|g'"
+
+
+      echo "REPLACING USING SED"
+      eval "sed ${SM_PARAMETERS} $SM_DEFINITION_TEMPLATE_FILE_PATH > $SM_DEFINITION_FILE_PATH"
+
+      echo "UPDATING STATE MACHINE"
+      aws stepfunctions update-state-machine \
+            --state-machine-arn "$STATE_MACHINE_ARN" \
+            --definition file://$SM_DEFINITION_FILE_PATH
+
+      echo "PUBLISHING STATE MACHINE VERSION"
+      VERSION_ARN=$(aws stepfunctions publish-state-machine-version \
+      --state-machine-arn "$STATE_MACHINE_ARN" \
+      --description "Version" \
+      --query 'stateMachineVersionArn' --output text);
+
+      echo "UPDATING STATE MACHINE ALIAS"
+      aws stepfunctions update-state-machine-alias \
+      --state-machine-alias-arn "${STATE_MACHINE_ARN}:${ALIAS_NAME}" \
+      --routing-configuration stateMachineVersionArn=${VERSION_ARN},weight=100
+
+      echo "State Machine $STATE_MACHINE_ARN deployment complete!"
+
+  steps:
+    - step: &CheckPreparationVersion
+        name: "Check Preparation Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-preparation-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/utils/**"
+              - "snorefox_med/preparation/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckAnalysisVersion
+        name: "Check Analysis Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-analysis-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/analysis/**"
+              - "snorefox_med/shared_analysis_report/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/scoring/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckReportVersion
+        name: "Check Report Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-report-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/report/**"
+              - "snorefox_med/shared_analysis_report/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/scoring/**"
+              - "snorefox_med/metadata/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckSourceSeparationBatchCreationVersion
+        name: "Check Source Separation Batch Creation Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-source-separation-batch-creation-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/source_separation/batch_creation/**"
+              - "snorefox_med/source_separation/utils.py"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckSourceSeparationBatchInferenceVersion
+        name: "Check Source Separation Batch Inference Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-source-separation-batch-inference-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/source_separation/batch_inference/**"
+              - "snorefox_med/source_separation/utils.py"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckSourceSeparationBatchCombinationVersion
+        name: "Check Source Separation Batch Combination Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-source-separation-batch-combination-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/source_separation/batch_combination/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckSleepBaseTipsVersion
+        name: "Check Sleep Base Tips Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-sleep-base-tips-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/tips/*"
+              - "snorefox_med/tips/sleep_base_tips/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckCrashMitigationVersion
+        name: "Check Crash Mitigation Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-crash-mitigation-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/crash_mitigation/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/utils/**"
+              - "snorefox_med/metadata/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckConvemaInvoicesVersion
+        name: "Check Convema Invoices (Data Funnel) Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-convema-invoices-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/convema_invoices/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckDeleteUserDataVersion
+        name: "Check Delete User Data Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-delete-user-data-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/delete_user_data/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckPromotionCampaignVersion
+        name: "Check Promotion Campaign Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-promotion-campaign-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/promotion_campaign/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckReminderVersion
+        name: "Check Reminder Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-reminder-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/reminder/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckDataDonationVersion
+        name: "Check Data Donation Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-data-donation-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/data_donation/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckDailyTipsVersion
+        name: "Check Daily Tips Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-daily-tips-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/tips/*"
+              - "snorefox_med/tips/daily_tips/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckDefaultTipsVersion
+        name: "Check Default Tips Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-default-tips-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/tips/*"
+              - "snorefox_med/tips/default_tips/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &CheckApiSqsBridgeVersion
+        name: "Check Api SQS Bridge Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-api-sqs-bridge-variables
+          - *check-version-exists
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/api_sqs_bridge/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/client/sqs_client/**"
+              - "snorefox_med/metadata/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployPreparation
+        name: "Deploy Preparation Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-preparation-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-lambda
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/client/**"
+              - "snorefox_med/utils/**"
+              - "snorefox_med/preparation/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployAnalysis
+        name: "Deploy Analysis Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-analysis-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-lambda
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/analysis/**"
+              - "snorefox_med/shared_analysis_report/**"
+              - "snorefox_med/client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/scoring/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployReport
+        name: "Deploy Report Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-report-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-lambda
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/report/**"
+              - "snorefox_med/shared_analysis_report/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/scoring/**"
+              - "snorefox_med/metadata/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeploySourceSeparationBatchCreation
+        name: "Deploy Source Separation Batch Creation Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-source-separation-batch-creation-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-lambda
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/source_separation/batch_creation/**"
+              - "snorefox_med/source_separation/utils.py"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeploySourceSeparationBatchInference
+        name: "Deploy Source Separation Batch Inference Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-source-separation-batch-inference-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-lambda
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/source_separation/batch_inference/**"
+              - "snorefox_med/source_separation/utils.py"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeploySourceSeparationBatchCombination
+        name: "Deploy Source Separation Batch Combination Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-source-separation-batch-combination-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-lambda
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/source_separation/batch_combination/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeploySleepBaseTips
+        name: "Deploy Sleep Base Tips Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-sleep-base-tips-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-lambda
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/tips/*"
+              - "snorefox_med/tips/sleep_base_tips/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployCrashMitigation
+        name: "Deploy Crash Mitigation Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-crash-mitigation-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-eventbridge-schedule
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/crash_mitigation/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/utils/**"
+              - "snorefox_med/metadata/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployConvemaInvoices
+        name: "Deploy Convema Invoices (Data Funnel) Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-convema-invoices-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-eventbridge-schedule
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/convema_invoices/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployDeleteUserData
+        name: "Deploy Delete User Data Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-delete-user-data-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-lambda
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/delete_user_data/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployPromotionCampaign
+        name: "Deploy Promotion Campaign Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-promotion-campaign-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-eventbridge-schedule
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/promotion_campaign/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployReminder
+        name: "Deploy Reminder Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-reminder-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-eventbridge-schedule
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/reminder/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployDataDonation
+        name: "Deploy Data Donation Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-data-donation-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-lambda
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/data_donation/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployDailyTips
+        name: "Deploy Daily Tips Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-daily-tips-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-eventbridge-schedule
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/tips/*"
+              - "snorefox_med/tips/daily_tips/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployDefaultTips
+        name: "Deploy Default Tips Component"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-default-tips-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-ecs
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/tips/*"
+              - "snorefox_med/tips/default_tips/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/client/s3_client/**"
+              - "snorefox_med/patient/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &DeployApiSqsBridgeVersion
+        name: "Deploy Api SQS Bridge Version"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-api-sqs-bridge-variables
+          - *check-version-exists
+          - *build-image
+          - *deployment-process-lambda
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/api_sqs_bridge/**"
+              - "snorefox_med/client/snorefox_med_client/**"
+              - "snorefox_med/client/sqs_client/**"
+              - "snorefox_med/metadata/**"
+              - "snorefox_med/utils/**"
+              # - "bitbucket-pipelines.yml"
+
+    - step: &UpdateSnorefoxWorkflowSM
+        name: "Update Snorefox Workflow State Machine"
+        oidc: true
+        services:
+          - docker
+        script:
+          - *set-pipeline-level-variables
+          - *set-aws-credentials
+          - *set-snorefox-sm-variables
+          - *update-sm-process
+        condition:
+          changesets:
+            includePaths:
+              - "snorefox_med/sm_definitions/snorefox_workflow_template.json"
+              - "snorefox_med/preparation/preparation.version"
+              - "snorefox_med/analysis/analysis.version"
+              - "snorefox_med/report/report.version"
+              - "snorefox_med/data_donation/data_donation.version"
+              - "snorefox_med/tips/sleep_base_tips/sleep_base_tips.version"
+
+pipelines:
+  pull-requests:
+    "**":
+      - parallel:
+          - step: *CheckPreparationVersion
+          - step: *CheckAnalysisVersion
+          - step: *CheckReportVersion
+          - step: *CheckSleepBaseTipsVersion
+          - step: *CheckCrashMitigationVersion
+          - step: *CheckPromotionCampaignVersion
+          - step: *CheckReminderVersion
+          - step: *CheckDataDonationVersion
+          - step: *CheckDefaultTipsVersion
+          - step: *CheckDailyTipsVersion
+          - step: *CheckApiSqsBridgeVersion
+          - step: *CheckConvemaInvoicesVersion
+
+  branches:
+    test:
+      - parallel:
+          - step: *DeployPreparation
+          - step: *DeployAnalysis
+          - step: *DeployReport
+          - step: *DeploySleepBaseTips
+          - step: *DeployCrashMitigation
+          - step: *DeployPromotionCampaign
+          - step: *DeployReminder
+          - step: *DeployDataDonation
+          - step: *DeployDefaultTips
+          - step: *DeployDailyTips
+          - step: *DeployApiSqsBridgeVersion
+          - step: *DeployConvemaInvoices
+      - parallel:
+          - step: *UpdateSnorefoxWorkflowSM
+    live:
+      - parallel:
+          - step: *DeployPreparation
+          - step: *DeployAnalysis
+          - step: *DeployReport
+          - step: *DeploySleepBaseTips
+          - step: *DeployCrashMitigation
+          - step: *DeployPromotionCampaign
+          - step: *DeployReminder
+          - step: *DeployDataDonation
+          - step: *DeployDefaultTips
+          - step: *DeployDailyTips
+          - step: *DeployApiSqsBridgeVersion
+          - step: *DeployConvemaInvoices
+      - parallel:
+          - step: *UpdateSnorefoxWorkflowSM

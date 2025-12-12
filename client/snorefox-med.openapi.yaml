@@ -1,0 +1,3133 @@
+openapi: 3.0.0
+info:
+  title: Snorefox Med
+  version: 1.3.0
+  contact:
+    name: brayn.io
+servers:
+  - url: 'https://test.diametos.com'
+    description: Test Server
+  - url: 'https://live.diametos.com'
+    description: Production Server
+components:
+  securitySchemes: { }
+  schemas:
+    ChartData:
+      description: >-
+        a representation of a chart data object, i.e. shown in a chart as a
+        point
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: id of this chart data entity
+          example: 1
+        chartDefinitionId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: id of the chartDefinition entity
+          example: 1
+        sleepBaseId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: id of the sleepBase entity
+          example: 1
+        valueX:
+          type: string
+          # format: date-time
+          description: value of x axis
+          example: '2022-01-01 00:00:10'
+        valueY:
+          type: integer
+          description: value of y axis
+          example: 17
+        valueColor:
+          type: string
+          description: color for this point in the chart
+          example: '#FFAA00'
+      required:
+        - chartDefinitionId
+        - sleepBaseId
+        - valueX
+        - valueY
+        - valueColor
+    ChartDefinition:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: id of this entity
+          example: 1
+        orderPosition:
+          type: integer
+          description: show charts ordered by this value
+          example: 10
+        chartType:
+          type: string
+          enum:
+            - barGraph
+            - barChart
+            - lineDiagram
+          description: references the type of chart
+          example: lineDiagram
+        labelX:
+          type: string
+          description: label of x-axis
+          example: Uhrzeit
+          nullable: true
+        labelY:
+          type: string
+          description: label of y-axis
+          example: Level
+          nullable: true
+        chartTitle:
+          type: string
+          description: title of chart
+          example: Schlafapnoe
+          nullable: true
+        chartText:
+          type: string
+          description: description of chart
+          example: text text text
+          nullable: true
+        scaleYMin:
+          type: number
+          description: min scale value of y-axis
+          example: 0
+          nullable: true
+        scaleYMax:
+          type: number
+          description: max scale value of y-axis
+          example: 10
+          nullable: true
+        disabled:
+          type: boolean
+          description: indicates that the chart is disabled
+          example: false
+        chartTextTopHtml:
+          type: string
+          description: description of chart displayed on top
+          example: top top top
+        chartTextBottomHtml:
+          type: string
+          description: description of chart displayed on bottom
+          example: bottom bottom bottom
+        roles:
+          type: integer
+          description: filter for roles that can see this chart
+          example: 64
+      required:
+        - orderPosition
+        - chartType
+        - disabled
+        - chartTextTopHtml
+        - chartTextBottomHtml
+        - roles
+    ChartPlaceholder:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: id of this entity
+          example: 1
+        chartDefinitionId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: id of referenced chartDefinition
+          example: 1
+        sleepBaseId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: id of referenced sleepBase
+          example: 1
+        name:
+          type: string
+          description: >-
+            name of the placeholder - will be replaced, i.e. if the name is
+            "replaceMe", the string "{replaceMe}" will be replaced
+          example: replaceMe
+        valueHtml:
+          type: string
+          description: 'new value for replacement, html format is allowed'
+          example: replaced
+      required:
+        - chartDefinitionId
+        - sleepBaseId
+        - name
+        - valueHtml
+    SleepBase:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The sleep base ID.
+          example: 1
+        userId:
+          type: integer
+          description: id of the user the sleep belongs to
+          example: 1
+        start:
+          type: string
+          # format: date-time
+          description: start timestamp of sleep
+          example: '2022-03-22 22:00:00'
+        stop:
+          type: string
+          # format: date-time
+          description: stop timestamp of sleep
+          example: '2022-03-23 06:00:00'
+        analysis:
+          type: string
+          description: text with result of analysis
+          example: no snore
+          nullable: true
+        analysisPictureName:
+          type: string
+          description: url of picture - not used
+          example: 'https://bla.blubb.com/123'
+          nullable: true
+        deleted:
+          type: boolean
+          description: flag that indicates that this sleep should be deleted
+          example: false
+        patientId:
+          type: string
+          description: string to reference the patient for snorefox
+          example: M007
+          nullable: true
+        analysisResult:
+          oneOf:
+            - type: 'null'
+            - type: string
+              enum:
+                - normal
+                - critical
+                - danger
+                - invalid
+                - valid
+          description: enum with result of sleep analysis
+          example: danger
+          nullable: true
+        evaluationHtml:
+          type: string
+          description: html string with result of analysis
+          example: danger snore
+          nullable: true
+        wasHelpful:
+          type: boolean
+          description: >-
+            boolean to specify if the corresponding sleep_base record was
+            helpful
+          example: true
+          nullable: true
+        device:
+          type: string
+          description: specify the device on which the recording was made
+          example: Apple IPhone Pro with 128 GB RAM
+          nullable: true
+        note:
+          type: string
+          description: json string of the notes
+          example: '{"position":"sideways"}}'
+          nullable: true
+        frontendInfo:
+          type: string
+          description: json string of the frontend info
+          example: '{"color":"red"}}'
+          nullable: true
+        backendInfo:
+          type: string
+          description: json string of the backend info
+          example: '{"color":"red"}}'
+          nullable: true
+      required:
+        - userId
+        - start
+        - deleted
+        - stop
+    SleepBaseRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          description: id of the user the sleep belongs to
+          example: 1
+        start:
+          type: string
+          # format: date-time
+          description: start timestamp of sleep
+          example: '2022-03-22 22:00:00'
+        stop:
+          type: string
+          # format: date-time
+          description: stop timestamp of sleep
+          example: '2022-03-23 06:00:00'
+          nullable: true
+        analysis:
+          type: string
+          description: text with result of analysis
+          example: no snore
+          nullable: true
+        analysisPictureName:
+          type: string
+          description: url of picture - not used
+          example: 'https://bla.blubb.com/123'
+          nullable: true
+        deleted:
+          type: boolean
+          description: flag that indicates that this sleep should be deleted
+          example: false
+        patientId:
+          type: string
+          description: string to reference the patient for snorefox
+          example: M007
+          nullable: true
+        analysisResult:
+          oneOf:
+            - type: 'null'
+            - type: string
+              enum:
+                - normal
+                - critical
+                - danger
+                - invalid
+                - valid
+          description: enum with result of sleep analysis
+          example: danger
+          nullable: true
+        evaluationHtml:
+          type: string
+          description: html string with result of analysis
+          example: danger snore
+          nullable: true
+        wasHelpful:
+          type: boolean
+          description: >-
+            boolean to specify if the corresponding sleep_base record was
+            helpful
+          example: true
+          nullable: true
+        device:
+          type: string
+          description: specify the device on which the recording was made
+          example: Apple IPhone Pro with 128 GB RAM
+          nullable: true
+        note:
+          type: string
+          description: json string of the notes
+          example: '{"position":"sideways"}}'
+          nullable: true
+        frontendInfo:
+          type: string
+          description: json string of the frontend info
+          example: '{"color":"red"}}'
+          nullable: true
+        backendInfo:
+          type: string
+          description: json string of the backend info
+          example: '{"event_name":"value"}}'
+          nullable: true
+    SleepRecord:
+      description: one record (1 minute)
+      type: object
+      properties:
+        id:
+          type: integer
+          description: id of the entity
+          example: 1
+        sleepBaseId:
+          type: integer
+          description: id of the sleepBase entity to which the sleepRecord belongs
+          example: 1
+        start:
+          type: string
+          # format: date-time
+          description: timestamp when the this record started
+          example: '2022-03-22 15:55:00'
+        position:
+          type: integer
+          description: position of the record
+          example: 1
+        recordType:
+          type: string
+          enum:
+            - sound
+            - flac
+          description: type of the file
+          example: sound
+        analysed:
+          type: boolean
+          description: flag that indicates that this record was analysed
+          example: true
+          nullable: true
+        filename:
+          type: string
+          description: name of the file (hash of file content)
+          example: dtvhrsegsakuhri85rh23k4hjrw
+        fileLocation:
+          type: string
+          description: >-
+            specifies where the file should be stored, defined through config
+            files
+          enum:
+            - localFilesystem
+            - amazonS3
+      required:
+        - id
+        - sleepBaseId
+        - position
+        - recordType
+        - filename
+        - fileLocation
+        - start
+    SleepRecordRequest:
+      description: one record (1 minute)
+      type: object
+      properties:
+        sleepBaseId:
+          type: integer
+          description: id of the sleepBase entity to which the sleepRecord belongs
+          example: 1
+        start:
+          type: string
+          # format: date-time
+          description: timestamp when the this record started
+          example: '2022-03-22 15:55:00'
+          nullable: true
+        position:
+          type: integer
+          description: position of the record
+          example: 1
+        recordType:
+          type: string
+          enum:
+            - sound
+          description: type of the file
+          example: sound
+        analysed:
+          type: boolean
+          description: flag that indicates that this record was analysed
+          example: true
+          nullable: true
+    SoundSnippet:
+      description: sound snippet from a specific recording
+      type: object
+      properties:
+        id:
+          type: integer
+          description: id of the sound snippet
+          example: 1
+        sleepBaseId:
+          type: integer
+          description: id of the sleep base the sound snippet corresponds to
+          example: 3
+        length:
+          type: integer
+          description: length of the snippet in seconds
+          example: 11
+        createdAt:
+          type: string
+          # format: date-time
+          description: timestamp when the sound snippet was created
+          example: '2022-01-22 17:05:00'
+        rating:
+          type: string
+          description: rating of the snippet
+          example: good
+          nullable: true
+        orderPosition:
+          type: integer
+          description: sound snippets will be ordered according to this number
+          example: 5
+          nullable: true
+        fileName:
+          type: string
+          description: name of the file (hash of file content)
+          example: dtvhrsegsakuhri85rh23k4hjrw
+        fileLocation:
+          type: string
+          description: >-
+            specifies where the file should be stored, defined through config
+            files
+          enum:
+            - localFilesystem
+            - amazonS3
+      required:
+        - sleepBaseId
+        - length
+        - createdAt
+        - fileName
+        - fileLocation
+    SingleSoundSnippetResponse:
+      description: response with info from a single sound snippet entry
+      type: object
+      properties:
+        id:
+          type: integer
+          description: id of the sound snippet entity
+          example: 1
+        sleepBaseId:
+          type: integer
+          description: id of the corresponding sleep base entity
+          example: 1
+        lenght:
+          type: integer
+          description: length in seconds of the sound snippet file
+          example: 11
+        orderPosition:
+          type: integer
+          description: >-
+            order position of the sound snippet, used for sorting (together with
+            snippet id)
+          example: 3
+          nullable: true
+        rating:
+          type: string
+          description: textual rating of the sound snippet file
+          example: good
+          nullable: true
+        createdAt:
+          type: string
+          description: datetime string with timestamp info on when the file was created
+          example: '2022-12-21 17:05:49'
+        filename:
+          type: string
+          description: name assigned to the file by the app
+          example: >-
+            0b959037f931fb7488e6038a411c2b867f788b423ee1ae142de0346a5ed259363fd5f8a0e18ff89fad4da32da4b7cc97376c55209eb2a8ff3fc9a752e454de2a_sound
+        fileLocation:
+          type: string
+          description: >-
+            specifies where the file should be stored, defined by app config
+            settings
+          enum:
+            - localFilesystem
+            - amazonS3
+      required:
+        - id
+        - sleepBaseId
+        - lenght
+        - createdAt
+        - filename
+        - fileLocation
+    TipOfDay:
+      description: user's tip of the day
+      type: object
+      properties:
+        id:
+          type: integer
+          description: id of the tip
+          example: 1
+        userId:
+          type: integer
+          description: id of the user the tip belongs to
+          example: 1
+        contentHtml:
+          type: string
+          description: 'Content, can be rendered as html.'
+          example: This is an example of a tip.
+        teaserHtml:
+          type: string
+          description: 'Preview, can be rendered as html.'
+          example: Teaser example
+        orderPosition:
+          type: integer
+          description: Order of tips.
+          example: 10
+        pictureUrl:
+          type: string
+          description: url to picture
+          example: null
+          nullable: true
+        language:
+          type: string
+          description: language of entity
+          example: de
+        blurImage:
+          type: string
+          description: blur image hash
+          example: 'LEHLh[WB2yk8pyoJadR*.7kCMdnj'
+          nullable: true
+        sleepBaseId:
+          type: string
+          description: id of related sleep base
+          example: 1
+          nullable: true
+        tags:
+          type: string
+          description: comma separated list of tags
+          example: 'Risk.invalid,Bmi.high'
+          nullable: true
+      required:
+        - userId
+        - contentHtml
+        - orderPosition
+        - teaserHtml
+        - language
+    TipOfDayRequest:
+      description: user's tip of the day
+      type: object
+      properties:
+        userId:
+          type: integer
+          description: id of the user the tip belongs to
+          example: 1
+        contentHtml:
+          type: string
+          description: 'Content, can be rendered as html.'
+          example: This is an example of a tip.
+        teaserHtml:
+          type: string
+          description: 'Preview, can be rendered as html.'
+          example: Teaser example
+        orderPosition:
+          type: integer
+          description: Order of tips.
+          example: 10
+        pictureUrl:
+          type: string
+          description: url to picture
+          example: null
+          nullable: true
+        language:
+          type: string
+          description: language of entity
+          example: de
+        blurImage:
+          type: string
+          description: blur image hash
+          example: 'LEHLh[WB2yk8pyoJadR*.7kCMdnj'
+          nullable: true
+        sleepBaseId:
+          type: string
+          description: id of related sleep base
+          example: 1
+          nullable: true
+        tags:
+          type: string
+          description: comma separated list of tags
+          example: 'Risk.invalid,Bmi.high'
+          nullable: true
+    CreateUserRequest:
+      type: object
+      properties:
+        pinTransportMethod:
+          type: string
+          description: Enum that defines how the message for 2 factor authentication is submitted - not used in this project
+          example: "None"
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        uuid:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          description: phone number
+          example: 012345678
+          nullable: true
+        roles:
+          type: integer
+          nullable: true
+        language:
+          type: string
+          description: language which should be used [ de | en ]
+          example: de
+          nullable: true
+        dataDonation:
+          type: boolean
+        newsletter:
+          type: boolean
+        password:
+          type: string
+          description: password of the user
+          example: 123456a!
+          nullable: true
+        reminderActive:
+          type: boolean
+          description: flag to activate the reminder function
+          example: true
+          nullable: true
+        reminderTime:
+          type: string
+          description: time when the reminder should happen
+          example: 22:00:00
+          nullable: true
+        reminderInterval:
+          type: string
+          enum:
+            - never
+            - everyday
+            - weekdays
+            - weekenddays
+          description: enum for interval of reminders
+          example: never
+          nullable: true
+        timezone:
+          type: string
+          description: timezone
+          example: GMT+1
+          nullable: true
+        socialNetworkProvider:
+          type: string
+          description: provider for sign login [apple | facebook | google]
+          example: google
+          nullable: true
+        socialNetworkToken:
+          type: string
+          description: token to sign in given by social network provider
+          example: dh83b93iehfpa3blf
+          nullable: true
+      required:
+        - dataDonation
+        - newsletter
+    User:
+      type: object
+      properties:
+        pinTransportMethod:
+          type: string
+          description: >-
+            Enum that defines how the message for 2 factor authentication is
+            submitted - not used in this project
+          example: None
+          nullable: true
+        avatar:
+          type: string
+          description: string that references the avatar - not used in this project
+          example: sdad3l5n3k423oafseak5t
+          nullable: true
+        id:
+          type: integer
+          description: id of this entity
+          example: 1
+        deleted:
+          type: boolean
+          description: flag that indicates that the user is deleted
+          example: false
+          nullable: true
+        hasAvatar:
+          type: boolean
+          description: flag that indicates that the user has an avatar
+          example: false
+          nullable: true
+        phone:
+          type: string
+          description: phone number
+          example: 012345678
+          nullable: true
+        fcmToken:
+          type: string
+          description: token for firebase cloud messaging
+          example: asdfw098fj32rlnlwiufa9sfih
+          nullable: true
+        freeRecords:
+          type: integer
+          description: count of free records (somnofox)
+          example: 3
+          nullable: true
+        email:
+          type: string
+          description: email address
+          example: foo@bar.de
+          nullable: true
+        uuid:
+          type: string
+          description: uuid of the device
+          example: '902344234323234'
+          nullable: true
+        debugLevel:
+          type: string
+          enum:
+            - error
+            - warn
+            - info
+            - debug
+          description: enum for user's debug level
+          example: error
+          nullable: true
+        analysisPictureUrl:
+          type: string
+          description: url with an image of analysis result
+          example: 'http://www.bla.blubb/123'
+          nullable: true
+        lastName:
+          type: string
+          description: family name of the user
+          example: Schmidth
+          nullable: true
+        firstName:
+          type: string
+          description: first name of the user
+          example: Bert
+          nullable: true
+        language:
+          type: string
+          description: language which should be used
+          example: de
+          nullable: true
+        roles:
+          type: integer
+          description: >-
+            roles of user, can be added (END_USER_PREMIUM: 64, PATIENT: 32,
+            PRACTICE_STAFF: 16, ACCOUNT_MANAGER: 8, ADMIN: 4, REGISTERED: 2,
+            GUEST: 1)
+          example: 64
+          nullable: true
+        adviserPictureUrl:
+          type: string
+          description: url for adviser picture
+          example: 'https://www.bla.blubb/123'
+          nullable: true
+        debugButton:
+          type: boolean
+          description: flag that indicates that the debug button should be displayed
+          example: true
+          nullable: true
+        analysisText:
+          type: string
+          description: text with result of analysis
+          example: This is the result.
+          nullable: true
+        adviserText:
+          type: string
+          description: adviser text after analysis
+          example: Adviser text
+          nullable: true
+        dataDonation:
+          type: boolean
+          description: flag that indicates that the user agreed the data donation
+          example: true
+          nullable: true
+        newsletter:
+          type: boolean
+          description: flag that is set if the user subscribed the newsletter
+          example: false
+          nullable: true
+        isConfirmed:
+          type: boolean
+          description: true if the email address is confirmed
+          example: true
+          nullable: true
+        createdAt:
+          type: string
+          description: timestamp when the account was created
+          example: '2022-08-08 17:43'
+          nullable: true
+        reminderActive:
+          type: boolean
+          description: flag to activate the reminder function
+          example: true
+          nullable: true
+        reminderTime:
+          type: string
+          description: time when the reminder should happen
+          example: 79200
+          nullable: true
+        reminderInterval:
+          type: string
+          enum:
+            - never
+            - everyday
+            - weekdays
+            - weekenddays
+          description: enum for interval of reminders
+          example: never
+          nullable: true
+        timezone:
+          type: string
+          description: timezone of user
+          example: GMT+1
+          nullable: true
+    UserFormDataCreateRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          description: id of the user
+          example: 1
+          nullable: true
+        userFormDefinitionId:
+          type: integer
+          description: id of the form definition
+          example: 1
+        valueText:
+          type: string
+          description: answer
+          example: b
+    UserFormDataResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: id of the userFormData entity
+          example: 1
+        userId:
+          type: integer
+          description: id of the user to which this entity belongs
+          example: 1
+        userFormDefinitionId:
+          type: integer
+          description: id of the formDefinition this entity belongs
+          example: 1
+        valueText:
+          type: string
+          description: the given answer
+          example: b
+          nullable: true
+        createdAt:
+          type: string
+          description: timestamp when this entity was created
+          example: '2022-03-21 15:53:00'
+          nullable: true
+      required:
+        - id
+        - userId
+        - userFormDefinitionId
+    UserFormDefinitionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: id of the entity
+          example: 1
+        orderPosition:
+          type: integer
+          description: order the form fields by this number
+          example: 10
+          nullable: true
+        inputType:
+          type: string
+          enum:
+            - text
+            - choice
+          description: type of input element
+          example: choice
+          nullable: true
+        label:
+          type: string
+          description: Label of input element
+          example: Age
+          nullable: true
+        disabled:
+          type: boolean
+          description: flag to disable this form field
+          example: false
+        formReference:
+          type: string
+          description: reference of a form this form field belongs to
+          example: questionary
+          nullable: true
+        hint:
+          type: string
+          description: Hint for the form field
+          example: This is a hint.
+          nullable: true
+        placeholder:
+          type: string
+          description: Placeholder of this field
+          example: Age
+          nullable: true
+        isValidRegex:
+          type: string
+          description: regex to validate the input
+          example: '/^[abcd]+$/'
+          nullable: true
+        invalidText:
+          type: string
+          description: Text to be displayed if the regex doesn't match
+          example: Only one letter allowed.
+          nullable: true
+        pictureUrl:
+          type: string
+          description: url of picture to be displayed
+          example: 'https://www.bla.blubb/123'
+          nullable: true
+        choices:
+          type: string
+          description: JSON with definition of choices
+          example: '{"niemals":"a","gering":"b","mittel":"c","hoch":"d"}'
+          nullable: true
+        language:
+          type: string
+          description: language of form
+          example: de
+          nullable: true
+        key:
+          type: string
+          description: key to reference this formDefinition
+          example: key-1
+          nullable: true
+        questionReference:
+          type: string
+          description: key to reference this formDefinition for AI
+          example: 1
+          nullable: true
+      required:
+        - id
+        - disabled
+    UserFormDefinitionRequest:
+      type: object
+      properties:
+        orderPosition:
+          type: integer
+          description: order the form fields by this number
+          example: 10
+        inputType:
+          type: string
+          enum:
+            - text
+            - choice
+          description: type of input element
+          example: choice
+        label:
+          type: string
+          description: Label of input element
+          example: Age
+          nullable: true
+        disabled:
+          type: boolean
+          description: flag to disable this form field
+          example: false
+        formReference:
+          type: string
+          description: reference of a form this form field belongs to
+          example: questionary
+          nullable: true
+        hint:
+          type: string
+          description: Hint for the form field
+          example: This is a hint.
+          nullable: true
+        placeholder:
+          type: string
+          description: Placeholder of this field
+          example: Age
+          nullable: true
+        isValidRegex:
+          type: string
+          description: regex to validate the input
+          example: '/^[abcd]+$/'
+          nullable: true
+        invalidText:
+          type: string
+          description: Text to be displayed if the regex doesn't match
+          example: Only one letter allowed.
+          nullable: true
+        pictureUrl:
+          type: string
+          description: url of picture to be displayed
+          example: 'https://www.bla.blubb/123'
+          nullable: true
+        choices:
+          type: string
+          description: JSON with definition of choices
+          example: '{"niemals":"a","gering":"b","mittel":"c","hoch":"d"}'
+          nullable: true
+        language:
+          type: string
+          description: language of form
+          example: de
+        key:
+          type: string
+          description: key to reference this formDefinition
+          example: key-1
+        questionReference:
+          type: string
+          description: key to reference this formDefinition for AI
+          example: 1
+          nullable: true
+    Token:
+      title: token to upgrade to premium user
+      type: object
+      properties:
+        id:
+          type: integer
+          description: id of the entity
+          example: 1
+        token:
+          type: string
+          description: token
+          example: lYPBAGDVwc
+        redeemedAt:
+          type: string
+          description: timestamp when this entity was redeemed
+          example: "2022-03-21 15:53:00"
+        redeemedBy:
+          type: integer
+          description: id of the user that used the token
+          example: 1
+        insuranceId:
+          type: integer
+          description: id of the insurance
+          example: 1
+      required:
+        - id
+    PatchTokenRequest:
+      title: patch a token to upgrade to premium user
+      type: object
+      properties:
+        token:
+          type: string
+          description: token
+          example: lYPBAGDVwc
+        redeemedAt:
+          type: string
+          description: timestamp when this entity was redeemed
+          example: "2022-03-21 15:53:00"
+        redeemedBy:
+          type: integer
+          description: id of the user that used the token
+          example: 1
+        insuranceId:
+          type: integer
+          description: id of the insurance
+          example: 1
+        invoiceSentAt:
+          type: string
+          description: timestamp when the invoice was sent
+          example: "2022-03-21 15:53:00"
+    TokenValueResponse:
+      title: token to upgrade to premium user
+      type: object
+      properties:
+        token:
+          type: string
+          description: token
+          example: lYPBAGDVwc
+      required:
+        - token
+    GenerateTokenRequest:
+      title: create tokens
+      properties:
+        numberOfTokens:
+          type: integer
+          description: number of tokens to create
+          example: 10
+        insuranceId:
+          type: integer
+          description: id of the health insurance company to which the tokens belong
+          example: 1
+    CreateTokenByHauptIkRequest:
+      title: create token by hauptIk
+      properties:
+          hauptIk:
+            type: string
+            description: hauptIk of the insurance company
+            example: "260326822"
+      required:
+        - hauptIk
+  links: { }
+  callbacks: { }
+security: [ ]
+tags:
+  - name: chart
+  - name: messaging
+  - name: report-text
+  - name: sleep-base
+  - name: sound-snippet
+  - name: tip-of-day
+  - name: user
+paths:
+  /api/chart/data:
+    get:
+      tags:
+        - chart
+      summary: get a list of data to be displayed in a chart
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: page number of pagination
+          required: false
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: count of items
+          required: false
+          example: 50
+        - in: query
+          name: chartDefinitionId
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: id of referenced chartDefinition entity
+          required: false
+          example: 1
+        - in: query
+          name: sleepBaseId
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: id of referenced sleepBase entity
+          required: false
+          example: 1
+        - in: query
+          name: start
+          schema:
+            type: string
+            # format: date-time
+          description: filter for minimum start timestamp
+          required: false
+          example: '2020-01-01 00:00:00'
+        - in: query
+          name: end
+          schema:
+            type: string
+            # format: date-time
+          required: false
+          description: filter for max start timestamp
+          example: '2022-01-01 00:00:00'
+        - in: query
+          name: 'userIds[]'
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+              minimum: 1
+          required: false
+          description: filter for ids of user entities
+          example:
+            - 1
+            - 2
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChartData'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
+    post:
+      tags:
+        - chart
+      summary: add a bulk of chart data entities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              chartDefinitionId: integer
+              sleepBaseId: integer
+              values:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    x:
+                      type: string
+                    y:
+                      type: float
+                    color:
+                      type: string
+              example:
+                chartDefinitionId: 1
+                sleepBaseId: 2
+                values:
+                  - x: '2021-11-07 09:55:00'
+                    color: '#0000ff'
+                    'y': 1
+                  - x: '2021-11-07 09:56:00'
+                    color: '#ff0000'
+                    'y': 1
+                  - x: '2021-11-07 09:57:00'
+                    'y': 1
+      parameters:
+        - name: disabled
+          in: header
+          schema:
+            type: integer
+          example: '1'
+      responses:
+        '201':
+          description: Successful response
+  '/api/chart/data/{id}':
+    get:
+      tags:
+        - chart
+      summary: fetch a chartData by id
+      parameters:
+        - name: id
+          in: path
+          description: id of the chartData entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartData'
+    patch:
+      tags:
+        - chart
+      summary: patch a chart data entity
+      parameters:
+        - name: id
+          in: path
+          description: id of chartData entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                chartDefinitionId: 1
+                valueX: '2021-06-16 09:55:00'
+                valueColor: '#0000f0'
+                valueY: 1
+                sleepBaseId: 2
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartData'
+    delete:
+      tags:
+        - chart
+      summary: delete a chartData entity
+      parameters:
+        - name: id
+          in: path
+          description: id of chartData entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Successful response
+  /api/chart/definition:
+    get:
+      tags:
+        - chart
+      summary: fetch a list of chart definitions
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: page number of pagination
+          required: false
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: count of items
+          required: false
+          example: 50
+        - name: disabled
+          in: query
+          schema:
+            type: boolean
+          description: filter for disabled flag
+          example: false
+        - name: language
+          in: query
+          schema:
+            type: string
+          description: filter for language
+          example: de
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChartDefinition'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
+    post:
+      tags:
+        - chart
+      summary: create a new chart definition entity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                scaleYMin: 0
+                internalDescription: desc.
+                orderPosition: 10
+                chartTitle: title
+                chartTextTopHtml: text top
+                language: de
+                roles: 2
+                labelX: X
+                disabled: false
+                labelY: 'Y'
+                scaleYMax: 100
+                chartType: barChart
+                chartTextBottomHtml: text bottom
+      parameters:
+        - name: disabled
+          in: header
+          schema:
+            type: integer
+          example: '1'
+      responses:
+        '201':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartDefinition'
+  '/api/chart/definition/{id}':
+    get:
+      tags:
+        - chart
+      summary: fetch a chartDefinition by id
+      parameters:
+        - name: id
+          in: path
+          description: id of the chartDefinition entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartDefinition'
+    patch:
+      tags:
+        - chart
+      summary: patch an existing chart definition entity
+      parameters:
+        - name: id
+          in: path
+          description: id of chartDefinition entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                scaleYMin: 0
+                internalDescription: desc.
+                orderPosition: 10
+                chartTitle: title
+                chartTextTopHtml: text top
+                language: de
+                roles: 64
+                labelX: X
+                disabled: false
+                labelY: 'Y'
+                scaleYMax: 100
+                chartType: barChart
+                chartTextBottomHtml: text bottom
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: { }
+    delete:
+      tags:
+        - chart
+      summary: delete a chartDefinition entity
+      parameters:
+        - name: id
+          in: path
+          description: id of chartDefinition entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Successful response
+  /api/chart/placeholder:
+    get:
+      tags:
+        - chart
+      summary: get a list of chart placeholders
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: page number of pagination
+          required: false
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: count of items
+          required: false
+          example: 50
+        - in: query
+          name: chartDefinitionId
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: filter by id of chartDefinition
+          required: false
+          example: 1
+        - in: query
+          name: sleepBaseId
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: filter by id of sleepBase
+          required: false
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChartPlaceholder'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
+    post:
+      tags:
+        - chart
+      summary: create a new chart placeholder entity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                valueHtml:
+                  type: string
+                  description: value of the placeholder
+                  example: value234
+                name:
+                  type: string
+                  description: name of the placeholder
+                  example: name234
+                chartDefinitionId:
+                  type: integer
+                  format: int64
+                  minimum: 1
+                  description: id of the chart definition entry
+                  example: 382
+                sleepBaseId:
+                  type: integer
+                  format: int64
+                  minimum: 1
+                  description: id of the sleep base entry
+                  example: 15042
+      parameters:
+        - name: disabled
+          in: header
+          schema:
+            type: integer
+          example: '1'
+      responses:
+        '201':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartPlaceholder'
+  '/api/chart/placeholder/{id}':
+    get:
+      tags:
+        - chart
+      summary: fetch a placeholder by id
+      parameters:
+        - name: id
+          in: path
+          description: id of the placeholder entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartPlaceholder'
+    patch:
+      tags:
+        - chart
+      summary: patch a chart placeholder entity
+      parameters:
+        - name: id
+          in: path
+          description: id of placeholder entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                valueHtml: value1 changed1
+                name: name1-changed1
+                chartDefinitionId: 1
+                sleepBaseId: 12
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartPlaceholder'
+    delete:
+      tags:
+        - chart
+      summary: delete a placeholder entity
+      parameters:
+        - name: id
+          in: path
+          description: id of placeholder entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Successful response
+  /api/sleep/base:
+    get:
+      tags:
+        - sleep-base
+      summary: get a list of sleep-base entities
+      parameters:
+        - name: 'userIds[]'
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          description: array of user ids
+          example:
+            - 1
+            - 2
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: max items per page
+          example: 50
+        - name: page
+          in: query
+          schema:
+            type: integer
+          description: requested page
+          example: 1
+        - name: deleted
+          in: query
+          schema:
+            type: boolean
+          description: filter to hide deleted sleeps
+          example: false
+        - name: startBegin
+          in: query
+          schema:
+            type: string
+            # format: date-time
+          description: 'filter for start timestamp, show only newer sleeps'
+          example: '2022-03-01 00:00:00'
+        - name: startEnd
+          in: query
+          schema:
+            type: string
+            # format: date-time
+          description: 'filter for start timestamp, show only older sleeps'
+          example: '2022-03-31 00:00:00'
+        - name: stopBegin
+          in: query
+          schema:
+            type: string
+            # format: date-time
+          description: 'filter for stop timestamp, show only newer sleeps'
+          example: '2022-03-01 00:00:00'
+        - name: stopEnd
+          in: query
+          schema:
+            type: string
+            # format: date-time
+          description: 'filter for stop timestamp, show only older sleeps'
+          example: '2022-03-31 00:00:00'
+      responses:
+        '200':
+          description: A list of sleep bases
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SleepBase'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
+    post:
+      tags:
+        - sleep-base
+      summary: add new sleep base entity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SleepBaseRequest'
+      responses:
+        '201':
+          description: new created sleepBase entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepBase'
+      parameters: [ ]
+  '/api/sleep/base/{id}':
+    get:
+      tags:
+        - sleep-base
+      summary: fetch a sleep-base with given id
+      parameters:
+        - name: id
+          in: path
+          description: sleep base id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepBase'
+    patch:
+      tags:
+        - sleep-base
+      summary: update a sleep base entity
+      parameters:
+        - name: id
+          in: path
+          description: sleep base id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SleepBaseRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepBase'
+    delete:
+      tags:
+        - sleep-base
+      summary: delete a sleep base entity
+      parameters:
+        - name: id
+          in: path
+          description: sleep base id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Successful response
+  /api/sleep/record:
+    get:
+      tags:
+        - sleep-record
+      summary: get a list of sleepRecord entities
+      parameters:
+        - name: 'userIds[]'
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          description: array of user ids
+          example:
+            - 1
+            - 2
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: max items per page
+          example: 50
+        - name: page
+          in: query
+          schema:
+            type: integer
+          description: requested page
+          example: 1
+        - name: 'sleepBaseIds[]'
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          description: array of sleepBase ids
+          example:
+            - 1
+            - 2
+        - name: 'positionIds[]'
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          description: array of positionIds
+          example:
+            - 1
+            - 2
+        - name: analysed
+          in: query
+          schema:
+            type: boolean
+          description: filter to show/hide analysed records
+          example: false
+      responses:
+        '200':
+          description: A list of sleepRecord entities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SleepRecord'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
+    post:
+      tags:
+        - sleep-record
+      summary: add a new sleep base record
+      parameters:
+        - name: position
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 'number of record of current sleep, start with 0'
+          example: 5
+        - name: recordType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - sound
+          description: type of record
+          example: sound
+        - name: sleepBaseId
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: id of sleep base entity
+          example: 1
+        - name: start
+          in: query
+          required: true
+          schema:
+            type: string
+            # format: date-time
+          description: timestamp when the record of this starts
+          example: '2022-03-22 11:58:17'
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: new created sleepRecord entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepRecord'
+  '/api/sleep/record/{id}':
+    get:
+      tags:
+        - sleep-record
+      summary: fetch a sleepRecord with given id
+      parameters:
+        - name: id
+          in: path
+          description: sleepRecord id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepRecord'
+    patch:
+      tags:
+        - sleep-record
+      summary: update a sleepRecord entity
+      parameters:
+        - name: id
+          in: path
+          description: id of sleepRecord entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SleepRecordRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepRecord'
+    delete:
+      tags:
+        - sleep-record
+      summary: delete a sleepRecord entity
+      parameters:
+        - name: id
+          in: path
+          description: sleepRecord id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Successful response
+  '/api/sleep/record/{id}/file':
+    get:
+      tags:
+        - sleep-record
+      summary: get a record file which belongs to sleepRecord with given id
+      parameters:
+        - name: id
+          in: path
+          description: sleepRecord id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: file object
+  /api/sound-snippet:
+    get:
+      tags:
+        - sound-snippet
+      summary: get a list of sound-snippet entities
+      parameters:
+        - name: 'userIds[]'
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          description: array of user ids
+          example:
+            - 1
+            - 2
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: max items per page
+          example: 50
+        - name: page
+          in: query
+          schema:
+            type: integer
+          description: requested page
+          example: 1
+        - name: 'sleepBaseIds[]'
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          description: array of ids of sleep base entities corresponding to sound snippets
+          example:
+            - 1
+            - 2
+        - name: 'orderPositionIds[]'
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          description: array of order positions of sound snippets
+          example:
+            - 1
+            - 2
+      responses:
+        '200':
+          description: A list of sound snippets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SingleSoundSnippetResponse'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
+    post:
+      tags:
+        - sound-snippet
+      summary: create a new sound snippet entry
+      parameters:
+        - name: sleepBaseId
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: id of the corresponding sleep base entity
+          example: 5
+        - name: recordType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - sound
+          description: type of record
+          example: sound
+        - name: length
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: duration in seconds of the sound snippet file
+          example: 11
+        - name: orderPosition
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: >-
+            order position numer of the sound snippet, used for sorting
+            (together with sound snippet id)
+          example: 3
+        - name: rating
+          in: query
+          required: false
+          schema:
+            type: string
+          description: textual rating of the corresponding sound snippet
+          example: good
+        - name: mimeType
+          in: query
+          required: false
+          schema:
+            type: string
+          description: mime type of the sound snippet file
+          example: application/mpeg
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: newly created sound snippet entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleSoundSnippetResponse'
+  '/api/sound-snippet/{id}':
+    delete:
+      tags:
+        - sound-snippet
+      summary: delete a sound snippet entity
+      parameters:
+        - name: id
+          in: path
+          description: id of sound snippet entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Successful response
+  /api/tip-of-day:
+    get:
+      tags:
+        - tip-of-day
+      summary: get a list with tip-of-day entities
+      parameters:
+        - name: 'userIds[]'
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          example:
+            - 1
+            - 2
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            format: int64
+          example: 50
+        - name: language
+          in: query
+          schema:
+            type: string
+          example: de
+      responses:
+        '200':
+          description: A list of tips of the day
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TipOfDay'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
+    post:
+      tags:
+        - tip-of-day
+      summary: create a new tip-of-day entity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TipOfDayRequest'
+      responses:
+        '201':
+          description: new created tipOfDay entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipOfDay'
+      parameters: [ ]
+  '/api/tip-of-day/{id}':
+    summary: represents a tip of day
+    get:
+      tags:
+        - tip-of-day
+      summary: fetch a tip-of-day entity with given id
+      parameters:
+        - name: id
+          in: path
+          description: tip of day ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipOfDay'
+    patch:
+      tags:
+        - tip-of-day
+      summary: patch a tip-of-day entity with given id
+      parameters:
+        - name: id
+          in: path
+          description: tip of day ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TipOfDayRequest'
+      responses:
+        '200':
+          description: updated tipOfDay entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipOfDay'
+    delete:
+      tags:
+        - tip-of-day
+      summary: delete a tipOfDay entity
+      parameters:
+        - name: id
+          in: path
+          description: id of tipOfDay entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Successful response
+  /api/token:
+    get:
+      tags:
+        - token
+      summary: endpoint to search tokens for upgrade an user
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            format: int64
+          example: 50
+        - name: token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: cBPTTVqfN5
+        - name: redeemedBy
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          example: 1
+        - name: isInvoiceSent
+          in: query
+          required: false
+          schema:
+            type: boolean
+          example: false
+      responses:
+        '200':
+          description: A list of token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Token'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
+  /api/token/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: user's ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 1
+    patch:
+      tags:
+        - token
+      summary: endpoint to update a token for upgrade an user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchTokenRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+  /api/token/generate:
+    post:
+      tags:
+        - token
+      summary: endpoint to generate tokens
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateTokenRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    description: list of tokens
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Token'
+                required:
+                  - tokens
+  /api/token/generate-by-haupt-ik:
+    post:
+      tags:
+        - token
+      summary: endpoint to generate a token for a insurance referenced by hauptIk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTokenByHauptIkRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenValueResponse'
+  /api/messaging:
+    post:
+      tags:
+        - messaging
+      summary: send a message
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  description: message
+                  example: und hier der Body
+                actionKey:
+                  type: string
+                  enum:
+                    - showTipOfTheDay
+                    - showAnalysisOverview
+                    - showAnalysisDetail
+                    - reminder
+                    - campaign
+                  description: reference for an action
+                  example: showAnalysisDetail
+                userId:
+                  type: integer
+                  description: user id of the recipient
+                  example: 3
+                title:
+                  type: string
+                  description: title of the message
+                  example: dies ist der Titel
+                actionValue:
+                  type: string
+                  description: id of the entity that should be displayed
+                  example: '4'
+      responses:
+        '500':
+          description: Unsuccessful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    description: Status code of the error response.
+                    example: 500
+                  title:
+                    type: string
+                    description: Title of the error response.
+                    example: Internal server error.
+                  detail:
+                    type: string
+                    description: Detailed error message.
+                    example: User with id=123 does not have a fcm token.
+        '201':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  body:
+                    type: string
+                    description: message
+                    example: und hier der Body
+                  actionKey:
+                    type: string
+                    enum:
+                      - showTipOfTheDay
+                      - showAnalysisOverview
+                      - showAnalysisDetail
+                      - reminder
+                      - campaign
+                    description: reference for an action
+                    example: showAnalysisDetail
+                  messageName:
+                    type: string
+                    description: fcm name
+                    example: >-
+                      projects/snorefox-push-messages-5c8fb/messages/0:1647968287733740%206e3685206e3685
+                  userId:
+                    type: integer
+                    description: user id of the recipient
+                    example: 3
+                  title:
+                    type: string
+                    description: title of the message
+                    example: dies ist der Titel
+                  actionValue:
+                    type: string
+                    description: id of the entity that should be displayed
+                    example: '4'
+      parameters: [ ]
+  '/api/user/{id}':
+    get:
+      tags:
+        - user
+      summary: get user with given id
+      parameters:
+        - name: id
+          in: path
+          description: user's ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    delete:
+      tags:
+        - user
+      summary: delete user with given id
+      parameters:
+        - name: id
+          in: path
+          description: user's ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Successful response
+    patch:
+      tags:
+        - user
+      summary: update user with given id
+      parameters:
+        - name: id
+          in: path
+          description: user's ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /api/user:
+    post:
+      tags:
+        - user
+      summary: add new user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      parameters: [ ]
+  /api/user/form-data:
+    get:
+      tags:
+        - user data
+      summary: get a list of data for user form
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: max items per page
+          example: 50
+        - name: page
+          in: query
+          schema:
+            type: integer
+          description: number of requested page
+          example: 1
+        - name: 'userIds[]'
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          description: filter by a list of ids of users
+          example:
+            - 1
+            - 2
+        - name: userFormDefinitionId
+          in: query
+          schema:
+            type: integer
+          description: filter by id of form definition
+          example: 1
+        - name: 'userFormDefinitionIds[]'
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          description: filter by a list of ids of form definition
+          example:
+            - 1
+            - 2
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserFormDataResponse'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
+    post:
+      tags:
+        - user data
+      summary: add new user form data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserFormDataCreateRequest'
+      responses:
+        '201':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFormDataResponse'
+      parameters: [ ]
+  '/api/user/form-data/{id}':
+    summary: represents a user form data
+    get:
+      tags:
+        - user data
+      summary: fetch a userFormData entity with given id
+      parameters:
+        - name: id
+          in: path
+          description: id of userFormData entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFormDataResponse'
+    patch:
+      tags:
+        - user data
+      summary: patch a userFormData entity with given id
+      parameters:
+        - name: id
+          in: path
+          description: id of userFormData entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserFormDataCreateRequest'
+      responses:
+        '200':
+          description: updated userFormData entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFormDataResponse'
+    delete:
+      tags:
+        - user data
+      summary: delete a userFormData entity
+      parameters:
+        - name: id
+          in: path
+          description: id of userFormData entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Successful response
+  /api/user/form-definition:
+    get:
+      tags:
+        - user form
+      summary: get a list of definitions for user form
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: max item
+          example: 50
+        - name: disabled
+          in: query
+          schema:
+            type: boolean
+          description: whether to query for disabled questions
+          example: false
+        - name: page
+          in: query
+          schema:
+            type: integer
+          description: page number of pagination
+          example: 1
+        - name: formReference
+          in: query
+          schema:
+            type: string
+          description: filter by reference where to show the form
+          example: questionary
+        - name: language
+          in: query
+          schema:
+            type: string
+          description: filter language of form
+          example: de
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserFormDefinitionResponse'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
+    post:
+      tags:
+        - user form
+      summary: create a new userFormDefinition entity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserFormDefinitionRequest'
+      responses:
+        '201':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFormDefinitionResponse'
+      parameters: [ ]
+  '/api/user/form-definition/{id}':
+    get:
+      tags:
+        - user form
+      summary: fetch a userFormDefinition entity
+      parameters:
+        - name: id
+          in: path
+          description: id of userFormDefinition entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFormDefinitionResponse'
+    patch:
+      tags:
+        - user data
+      summary: patch a userFormDefinition entity with given id
+      parameters:
+        - name: id
+          in: path
+          description: id of userFormDefinition entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserFormDefinitionRequest'
+      responses:
+        '200':
+          description: updated userFormDefinition entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFormDefinitionResponse'
+    delete:
+      tags:
+        - user data
+      summary: delete a userFormDefinition entity
+      parameters:
+        - name: id
+          in: path
+          description: id of userFormDefinition entity
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Successful response
+  /api/user/list:
+    get:
+      tags:
+        - user
+      summary: get list of users
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: max items per page
+          example: 50
+        - name: page
+          in: query
+          schema:
+            type: integer
+          description: requested page
+          example: 1
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: filter users by given name
+          example: Maria
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentPage:
+                    type: integer
+                    description: page number of sent response
+                    example: 1
+                  limit:
+                    type: integer
+                    description: max datasets per response
+                    example: 50
+                  maxItems:
+                    type: integer
+                    description: max datasets
+                    example: 240
+                  pages:
+                    type: integer
+                    description: max pages
+                    example: 5
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                required:
+                  - currentPage
+                  - limit
+                  - maxItems
+                  - pages
+                  - list
